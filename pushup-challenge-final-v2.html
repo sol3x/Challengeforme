@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چالش شنا - افزایش تدریجی</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: system-ui, Tahoma, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+            direction: rtl;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+            margin: 10px 0;
+        }
+        
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .day {
+            background: #eee;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .day.completed {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .day.current {
+            background: #2196F3;
+            color: white;
+            font-weight: bold;
+        }
+
+        .day-number {
+            font-weight: bold;
+        }
+
+        .day-pushups {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        #completeDay {
+            background: #4CAF50;
+            color: white;
+            flex: 2;
+        }
+        
+        #reset {
+            background: #f44336;
+            color: white;
+            flex: 1;
+        }
+        
+        .phase-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .progress-container {
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2196F3;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-label {
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .next-phase {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>چالش افزایش تدریجی شنا</h1>
+        
+        <div class="stats-container">
+            <div class="stat-box">
+                <div>روز فعلی</div>
+                <div class="stat-value" id="currentDay">0</div>
+            </div>
+            <div class="stat-box">
+                <div>شناهای امروز</div>
+                <div class="stat-value" id="todayPushups">0</div>
+            </div>
+            <div class="stat-box">
+                <div>کل شناها</div>
+                <div class="stat-value" id="totalPushups">0</div>
+            </div>
+        </div>
+
+        <div class="phase-info" id="phaseInfo">مرحله ۱: هر روز ۱ شنا</div>
+        
+        <div class="progress-container">
+            <div class="progress-label">پیشرفت به سمت هدف ۱۰۰ شنا در روز:</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="next-phase" id="nextPhase"></div>
+        </div>
+        
+        <div class="days-grid" id="daysGrid"></div>
+        
+        <div class="buttons">
+            <button id="completeDay">ثبت تمرین امروز</button>
+            <button id="reset">شروع مجدد</button>
+        </div>
+    </div>
+
+    <script>
+        let currentDay = 0;
+        let completedDays = [];
+        const DAYS_PER_PHASE = 10;
+        const GOAL_PUSHUPS = 100;
+
+        function getPushups(day) {
+            return Math.floor((day - 1) / DAYS_PER_PHASE) + 1;
+        }
+
+        function getCurrentPhase() {
+            return Math.floor((currentDay - 1) / DAYS_PER_PHASE) + 1;
+        }
+
+        function updateUI() {
+            // بروزرسانی آمار
+            document.getElementById('currentDay').textContent = currentDay;
+            const todayPushups = currentDay > 0 ? getPushups(currentDay) : 0;
+            document.getElementById('todayPushups').textContent = todayPushups;
+            
+            // محاسبه کل شناها
+            const total = completedDays.reduce((sum, day) => sum + getPushups(day), 0);
+            document.getElementById('totalPushups').textContent = total;
+            
+            // بروزرسانی مرحله و پیشرفت
+            const currentPhase = getCurrentPhase();
+            const pushupsPerDay = currentPhase;
+            document.getElementById('phaseInfo').textContent = 
+                `مرحله ${currentPhase}: هر روز ${pushupsPerDay} شنا`;
+
+            // بروزرسانی نوار پیشرفت
+            const progressPercent = (pushupsPerDay / GOAL_PUSHUPS) * 100;
+            document.getElementById('progressFill').style.width = `${progressPercent}%`;
+            
+            // نمایش اطلاعات مرحله بعدی
+            if (pushupsPerDay < GOAL_PUSHUPS) {
+                const daysUntilNext = DAYS_PER_PHASE - (currentDay % DAYS_PER_PHASE);
+                document.getElementById('nextPhase').textContent = 
+                    `${daysUntilNext} روز تا مرحله بعد (${pushupsPerDay + 1} شنا در روز)`;
+            } else {
+                document.getElementById('nextPhase').textContent = 
+                    'تبریک! شما به هدف نهایی رسیده‌اید!';
+            }
+            
+            // بروزرسانی گرید روزها
+            const grid = document.getElementById('daysGrid');
+            grid.innerHTML = '';
+            
+            // نمایش روزهای نزدیک به روز فعلی
+            const startDay = Math.max(1, currentDay - 9);
+            const endDay = currentDay + 10;
+            
+            for (let i = startDay; i <= endDay; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'day';
+                if (completedDays.includes(i)) {
+                    dayDiv.classList.add('completed');
+                } else if (i === currentDay + 1) {
+                    dayDiv.classList.add('current');
+                }
+                
+                const dayNumber = document.createElement('div');
+                dayNumber.className = 'day-number';
+                dayNumber.textContent = `روز ${i}`;
+                
+                const dayPushups = document.createElement('div');
+                dayPushups.className = 'day-pushups';
+                dayPushups.textContent = `${getPushups(i)} شنا`;
+                
+                dayDiv.appendChild(dayNumber);
+                dayDiv.appendChild(dayPushups);
+                grid.appendChild(dayDiv);
+            }
+            
+            // بروزرسانی دکمه‌ها
+            const completeButton = document.getElementById('completeDay');
+            completeButton.disabled = completedDays.includes(currentDay + 1);
+        }
+
+        function completeDay() {
+            if (!completedDays.includes(currentDay + 1)) {
+                currentDay++;
+                completedDays.push(currentDay);
+                saveProgress();
+                updateUI();
+                
+                // نمایش پیام تبریک برای رسیدن به مراحل مهم
+                const pushupsPerDay = getPushups(currentDay);
+                if (pushupsPerDay === GOAL_PUSHUPS) {
+                    alert('تبریک! 🎉 شما به هدف نهایی ۱۰۰ شنا در روز رسیدید!');
+                } else if (currentDay % DAYS_PER_PHASE === 0) {
+                    alert(`تبریک! 🎉 شما مرحله ${getCurrentPhase()} را تمام کردید!`);
+                }
+            }
+        }
+
+        function resetChallenge() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید چالش را از اول شروع کنید؟')) {
+                currentDay = 0;
+                completedDays = [];
+                saveProgress();
+                updateUI();
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem('pushupChallenge', JSON.stringify({
+                currentDay,
+                completedDays
+            }));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('pushupChallenge');
+            if (saved) {
+                const data = JSON.parse(saved);
+                currentDay = data.currentDay;
+                completedDays = data.completedDays;
+                updateUI();
+            }
+        }
+
+        // تنظیم event listeners
+        document.getElementById('completeDay').addEventListener('click', completeDay);
+        document.getElementById('reset').addEventListener('click', resetChallenge);
+
+        // بارگذاری پیشرفت ذخیره شده و نمایش اولیه
+        loadProgress();
+        updateUI();
+    </script>
+</body>
+</html>
