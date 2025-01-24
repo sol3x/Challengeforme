@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>چالش شنا سوئدی</title>
+    <!-- لینک فونت Vazir از Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Vazirmatn', Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .progress {
+            margin-bottom: 20px;
+        }
+
+        .progress span {
+            display: block;
+            margin: 10px 0;
+            font-size: 18px;
+        }
+
+        button {
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .counter {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f8f9fa;
+        }
+
+        .completed {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .progress-bar {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-bar-fill {
+            height: 20px;
+            background-color: #28a745;
+            width: 0;
+            transition: width 0.5s ease;
+        }
+
+        .celebrate {
+            animation: celebrate 1s ease;
+        }
+
+        .settings {
+            margin-top: 20px;
+            text-align: left;
+            display: none; /* تنظیمات به صورت پیش‌فرض مخفی هستند */
+        }
+
+        .settings label {
+            display: block;
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+
+        .settings input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        @keyframes celebrate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>چالش شنا سوئدی</h1>
+        <p>هدف: رسیدن به <span id="targetSwimDisplay">۱۰۰</span> شنا سوئدی در روز</p>
+        <div class="progress">
+            <span id="currentDay">روز ۱</span>
+            <span id="currentSwim">تعداد شنا: ۱</span>
+            <span id="currentDate">تاریخ: -</span>
+        </div>
+        <div class="progress-bar">
+            <div id="progressBarFill" class="progress-bar-fill"></div>
+        </div>
+        <button id="completeButton">امروز رو کامل کردم!</button>
+        <button id="resetButton" style="background-color: #dc3545;">بازنشانی چالش</button>
+        <button id="toggleSettings" style="background-color: #007bff;">نمایش تنظیمات</button>
+        <div class="counter">
+            <p>روزهای کامل شده: <span id="completedDays">۰</span></p>
+        </div>
+
+        <div class="settings" id="settingsSection">
+            <h2>تنظیمات چالش</h2>
+            <label for="totalDays">تعداد روزهای چالش:</label>
+            <input type="number" id="totalDays" min="1" value="100">
+
+            <label for="targetSwim">تعداد شناهای هدف:</label>
+            <input type="number" id="targetSwim" min="1" value="100">
+
+            <label for="increaseInterval">هر چند روز یک بار افزایش شناها:</label>
+            <input type="number" id="increaseInterval" min="1" value="10">
+
+            <button id="saveSettings">ذخیره تنظیمات</button>
+        </div>
+
+        <h2>تاریخچه پیشرفت</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>روز</th>
+                    <th>تعداد شنا</th>
+                    <th>تاریخ</th>
+                    <th>وضعیت</th>
+                </tr>
+            </thead>
+            <tbody id="historyTable">
+                <!-- ردیف‌های تاریخچه اینجا اضافه می‌شوند -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let currentDay = 1;
+        let completedDays = 0;
+        let swimsPerDay = 1;
+        let history = [];
+        let totalDays = 100;
+        let targetSwim = 100;
+        let increaseInterval = 10;
+
+        // تابع تبدیل تاریخ میلادی به شمسی
+        function toPersianDate(date) {
+            const options = { year: 'numeric', month: 'long', day: 'numeric' };
+            return new Intl.DateTimeFormat('fa-IR', options).format(date);
+        }
+
+        // بازیابی داده‌ها از Local Storage
+        if (localStorage.getItem('challengeData')) {
+            const savedData = JSON.parse(localStorage.getItem('challengeData'));
+            currentDay = savedData.currentDay;
+            completedDays = savedData.completedDays;
+            swimsPerDay = savedData.swimsPerDay;
+            history = savedData.history || [];
+            totalDays = savedData.totalDays || 100;
+            targetSwim = savedData.targetSwim || 100;
+            increaseInterval = savedData.increaseInterval || 10;
+        }
+
+        // آپدیت صفحه با داده‌های ذخیره شده
+        updateUI();
+
+        document.getElementById('completeButton').addEventListener('click', function() {
+            if (history.some(entry => entry.day === currentDay)) {
+                alert("شما امروز رو قبلاً کامل کردید!");
+                return;
+            }
+
+            completedDays++;
+            const today = new Date();
+            history.unshift({ day: currentDay, swims: swimsPerDay, date: toPersianDate(today), status: "تکمیل شد ✅" });
+
+            if (completedDays % increaseInterval === 0 && completedDays !== 0) {
+                swimsPerDay++;
+            }
+
+            currentDay++;
+            updateUI();
+            saveData();
+
+            if (swimsPerDay === targetSwim) {
+                alert("تبریک! شما به هدف خود رسیدید!");
+                document.getElementById('currentDay').classList.add('celebrate');
+            }
+        });
+
+        document.getElementById('resetButton').addEventListener('click', function() {
+            if (confirm("آیا مطمئنید که می‌خواهید چالش را بازنشانی کنید؟")) {
+                localStorage.removeItem('challengeData');
+                currentDay = 1;
+                completedDays = 0;
+                swimsPerDay = 1;
+                history = [];
+                updateUI();
+            }
+        });
+
+        document.getElementById('toggleSettings').addEventListener('click', function() {
+            const settingsSection = document.getElementById('settingsSection');
+            if (settingsSection.style.display === 'none' || settingsSection.style.display === '') {
+                settingsSection.style.display = 'block';
+                this.textContent = 'مخفی کردن تنظیمات';
+            } else {
+                settingsSection.style.display = 'none';
+                this.textContent = 'نمایش تنظیمات';
+            }
+        });
+
+        document.getElementById('saveSettings').addEventListener('click', function() {
+            totalDays = parseInt(document.getElementById('totalDays').value);
+            targetSwim = parseInt(document.getElementById('targetSwim').value);
+            increaseInterval = parseInt(document.getElementById('increaseInterval').value);
+
+            if (totalDays < 1 || targetSwim < 1 || increaseInterval < 1) {
+                alert("لطفاً مقادیر معتبر وارد کنید!");
+                return;
+            }
+
+            saveData();
+            updateUI();
+            alert("تنظیمات با موفقیت ذخیره شد!");
+        });
+
+        function updateUI() {
+            document.getElementById('currentDay').textContent = `روز ${currentDay}`;
+            document.getElementById('currentSwim').textContent = `تعداد شنا: ${swimsPerDay}`;
+            document.getElementById('currentDate').textContent = `تاریخ: ${toPersianDate(new Date())}`;
+            document.getElementById('completedDays').textContent = completedDays;
+            document.getElementById('targetSwimDisplay').textContent = targetSwim;
+
+            const progress = (completedDays / totalDays) * 100;
+            document.getElementById('progressBarFill').style.width = `${progress}%`;
+
+            const historyTable = document.getElementById('historyTable');
+            historyTable.innerHTML = history.map(entry => `
+                <tr>
+                    <td>${entry.day}</td>
+                    <td>${entry.swims}</td>
+                    <td>${entry.date}</td>
+                    <td class="completed">${entry.status}</td>
+                </tr>
+            `).join('');
+        }
+
+        function saveData() {
+            const data = {
+                currentDay,
+                completedDays,
+                swimsPerDay,
+                history,
+                totalDays,
+                targetSwim,
+                increaseInterval
+            };
+            localStorage.setItem('challengeData', JSON.stringify(data));
+        }
+    </script>
+</body>
+</html>
