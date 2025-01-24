@@ -128,6 +128,13 @@
             border-radius: 5px;
         }
 
+        .motivation {
+            margin-top: 20px;
+            font-size: 18px;
+            font-style: italic;
+            color: #007bff;
+        }
+
         @keyframes celebrate {
             0% { transform: scale(1); }
             50% { transform: scale(1.2); }
@@ -150,8 +157,13 @@
         <button id="completeButton">امروز رو کامل کردم!</button>
         <button id="resetButton" style="background-color: #dc3545;">بازنشانی چالش</button>
         <button id="toggleSettings" style="background-color: #007bff;">نمایش تنظیمات</button>
+        <button id="enableNotifications" style="background-color: #ffc107;">فعال‌سازی یادآوری</button>
         <div class="counter">
             <p>روزهای کامل شده: <span id="completedDays">۰</span></p>
+        </div>
+
+        <div class="motivation">
+            <p id="motivationText">شروع کن، بقیه راه خودش میاد!</p>
         </div>
 
         <div class="settings" id="settingsSection">
@@ -193,6 +205,22 @@
         let targetSwim = 100;
         let increaseInterval = 10;
 
+        // لیست جملات انگیزشی
+        const motivationQuotes = [
+            "شروع کن، بقیه راه خودش میاد!",
+            "هر روز یک قدم به هدف نزدیک‌تر می‌شوی.",
+            "تو قوی‌تر از آنی هستی که فکر می‌کنی.",
+            "هیچ چیز غیرممکن نیست، اگر بخواهی.",
+            "امروز بهترین روز برای شروع است.",
+            "تلاش امروز، موفقیت فرداست.",
+            "هر روز یک فرصت جدید برای بهتر شدن است.",
+            "به خودت ایمان داشته باش، تو می‌تونی!",
+            "هیچ چیز نمی‌تونه جلوی تو رو بگیره.",
+            "موفقیت از آن کسانی است که هرگز تسلیم نمی‌شوند."
+        ];
+
+        let currentQuoteIndex = 0;
+
         // تابع تبدیل تاریخ میلادی به شمسی
         function toPersianDate(date) {
             const options = { year: 'numeric', month: 'long', day: 'numeric' };
@@ -209,10 +237,45 @@
             totalDays = savedData.totalDays || 100;
             targetSwim = savedData.targetSwim || 100;
             increaseInterval = savedData.increaseInterval || 10;
+            currentQuoteIndex = savedData.currentQuoteIndex || 0;
         }
 
         // آپدیت صفحه با داده‌های ذخیره شده
         updateUI();
+
+        // فعال‌سازی نوتیفیکیشن
+        document.getElementById('enableNotifications').addEventListener('click', function() {
+            if (Notification.permission !== 'granted') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        alert("یادآوری فعال شد!");
+                        scheduleDailyNotification();
+                    }
+                });
+            } else {
+                alert("یادآوری قبلاً فعال شده است!");
+            }
+        });
+
+        // زمان‌بندی نوتیفیکیشن روزانه
+        function scheduleDailyNotification() {
+            const now = new Date();
+            const notificationTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0); // ساعت ۸ صبح
+
+            if (now > notificationTime) {
+                notificationTime.setDate(notificationTime.getDate() + 1); // اگر زمان گذشته، برای فردا تنظیم کن
+            }
+
+            const timeUntilNotification = notificationTime - now;
+
+            setTimeout(() => {
+                new Notification("یادآوری چالش", {
+                    body: "یادت نره امروز چالش شنا سوئدی رو انجام بدی! 💪",
+                    icon: "icon.png" // آیکون دلخواه
+                });
+                scheduleDailyNotification(); // برای فردا هم زمان‌بندی کن
+            }, timeUntilNotification);
+        }
 
         document.getElementById('completeButton').addEventListener('click', function() {
             if (history.some(entry => entry.day === currentDay)) {
@@ -245,6 +308,7 @@
                 completedDays = 0;
                 swimsPerDay = 1;
                 history = [];
+                currentQuoteIndex = 0;
                 updateUI();
             }
         });
@@ -282,6 +346,13 @@
             document.getElementById('completedDays').textContent = completedDays;
             document.getElementById('targetSwimDisplay').textContent = targetSwim;
 
+            // نمایش جمله‌ی انگیزشی
+            const motivationText = document.getElementById('motivationText');
+            motivationText.textContent = motivationQuotes[currentQuoteIndex];
+
+            // افزایش ایندکس جمله‌ی انگیزشی برای روز بعد
+            currentQuoteIndex = (currentQuoteIndex + 1) % motivationQuotes.length;
+
             const progress = (completedDays / totalDays) * 100;
             document.getElementById('progressBarFill').style.width = `${progress}%`;
 
@@ -304,7 +375,8 @@
                 history,
                 totalDays,
                 targetSwim,
-                increaseInterval
+                increaseInterval,
+                currentQuoteIndex
             };
             localStorage.setItem('challengeData', JSON.stringify(data));
         }
